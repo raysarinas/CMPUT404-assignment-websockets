@@ -81,9 +81,9 @@ class World:
 
 myWorld = World()
 
-def set_listener( entity, data ):
+def set_listener(entity, data):
     ''' do something with the update ! '''
-    # TODO
+    send_all_json({entity: data})
 
 myWorld.add_set_listener(set_listener)
         
@@ -92,7 +92,7 @@ def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
     return redirect("/static/index.html", code=302)
 
-def read_ws(ws,client):
+def read_ws(ws, client):
     '''A greenlet function that reads from the websocket and updates the world'''
     try:
         while True:
