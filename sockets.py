@@ -26,6 +26,26 @@ app = Flask(__name__)
 sockets = Sockets(app)
 app.debug = True
 
+# https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py
+clients = list()
+
+def send_all(msg):
+    for client in clients:
+        client.put(msg)
+
+def send_all_json(obj):
+    send_all(json.dumps(obj))
+
+class Client:
+    def __init__(self):
+        self.queue = queue.Queue()
+
+    def put(self, v):
+        self.queue.put_nowait(v)
+
+    def get(self):
+        return self.queue.get()
+
 class World:
     def __init__(self):
         self.clear()
@@ -33,17 +53,17 @@ class World:
         self.listeners = list()
         
     def add_set_listener(self, listener):
-        self.listeners.append( listener )
+        self.listeners.append(listener)
 
     def update(self, entity, key, value):
         entry = self.space.get(entity,dict())
         entry[key] = value
         self.space[entity] = entry
-        self.update_listeners( entity )
+        self.update_listeners(entity)
 
     def set(self, entity, data):
         self.space[entity] = data
-        self.update_listeners( entity )
+        self.update_listeners(entity)
 
     def update_listeners(self, entity):
         '''update the set listeners'''
@@ -59,12 +79,12 @@ class World:
     def world(self):
         return self.space
 
-myWorld = World()        
+myWorld = World()
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
 
-myWorld.add_set_listener( set_listener )
+myWorld.add_set_listener(set_listener)
         
 @app.route('/')
 def hello():
@@ -73,16 +93,43 @@ def hello():
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
-    return None
+    try:
+        while True:
+            msg = ws.receive()
+            print("WS RECV: %s" % msg)
+            if (msg is not None):
+                packet = json.loads(msg)
+
+                # also update the world so clients are up to date
+                for key in packet.keys():
+                    myWorld.set(key, packet[key])
+                send_all_json(packet) # send to all clients
+
+            else:
+                break
+    except:
+        '''Done'''
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
-    # XXX: TODO IMPLEMENT ME
-    return None
+    client = Client()
+    clients.append(client)
+    g = gevent.spawn(read_ws, ws, client)    
+    print("Subscribing")
 
+    try:
+        while True:
+            # block here
+            msg = client.get()
+            print("Got a message!")
+            ws.send(msg)
+    except Exception as e:# WebSocketError as e:
+        print("WS Error %s" % e)
+    finally:
+        clients.remove(client)
+        gevent.kill(g)
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
 # this should come with flask but whatever, it's not my project.
