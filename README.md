@@ -60,3 +60,10 @@ Contributors
 * Abram Hindle
 * Cole Mackenzie
 * Raymond Sarinas
+
+
+Resources
+============
+* Reused code from my assignment 4 files `index.html` and `server.py`: https://github.com/raysarinas/CMPUT404-assignment-ajax
+* Client/websocket code from in-class examples `broadcaster.html` and `broadcaster.py`: https://github.com/abramhindle/WebSocketsExamples/
+* Border around Canvas: https://stackoverflow.com/a/26671084
